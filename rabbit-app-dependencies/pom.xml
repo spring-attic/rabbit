@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>rabbit-app-dependencies</artifactId>
+    <packaging>pom</packaging>
+    <name>rabbit-app-dependencies</name>
+    <description>Spring Cloud Stream Time App Dependencies</description>
+
+    <parent>
+        <groupId>org.springframework.cloud.stream.app</groupId>
+        <artifactId>app-starters-core-dependencies</artifactId>
+        <version>1.1.0.BUILD-SNAPSHOT</version>
+    </parent>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud.stream.app</groupId>
+                <artifactId>spring-cloud-starter-stream-source-rabbit</artifactId>
+                <version>1.1.0.BUILD-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud.stream.app</groupId>
+                <artifactId>spring-cloud-starter-stream-sink-rabbit</artifactId>
+                <version>1.1.0.BUILD-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud.stream.app</groupId>
+                <artifactId>rabbit-app-starters-test-support</artifactId>
+                <version>1.1.0.BUILD-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.integration</groupId>
+                <artifactId>spring-integration-amqp</artifactId>
+                <version>${spring-integration.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

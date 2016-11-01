@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>rabbit-app-starters-build</artifactId>
+	<packaging>pom</packaging>
+
+	<parent>
+		<groupId>org.springframework.cloud.stream.app</groupId>
+		<artifactId>app-starters-build</artifactId>
+		<version>1.1.0.BUILD-SNAPSHOT</version>
+		<relativePath/>
+	</parent>
+
+	<modules>
+		<module>spring-cloud-starter-stream-source-rabbit</module>
+		<module>spring-cloud-starter-stream-sink-rabbit</module>
+		<module>rabbit-app-dependencies</module>
+		<module>rabbit-app-starters-test-support</module>
+	</modules>
+
+</project>
