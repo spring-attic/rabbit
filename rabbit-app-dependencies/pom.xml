@@ -3,6 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rabbit-app-dependencies</artifactId>
+    <version>1.1.0.BUILD-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>rabbit-app-dependencies</name>
     <description>Spring Cloud Stream Time App Dependencies</description>
