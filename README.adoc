@@ -1,1 +1,9 @@
-# rabbitmq
+# Rabbit Source and Sink
+
+To learn more about this application and the supported properties, please review the following link.
+
+## Rabbit Source
+include::spring-cloud-starter-stream-source-rabbit/README.adoc[]
+
+## Rabbit Sink
+include::spring-cloud-starter-stream-sink-rabbit/README.adoc[]
