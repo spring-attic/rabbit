@@ -6,13 +6,15 @@
     <version>1.1.2.BUILD-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>rabbit-app-dependencies</name>
-    <description>Spring Cloud Stream Time App Dependencies</description>
+    <description>Spring Cloud Stream Rabbitmq App Dependencies</description>
 
     <parent>
-        <groupId>org.springframework.cloud.stream.app</groupId>
-        <artifactId>app-starters-core-dependencies</artifactId>
-        <version>1.1.1.RELEASE</version>
+	<artifactId>spring-cloud-dependencies-parent</artifactId>
+        <groupId>org.springframework.cloud</groupId>
+        <version>1.2.1.RELEASE</version>
+        <relativePath />
     </parent>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
