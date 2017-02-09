@@ -35,8 +35,7 @@ import org.springframework.amqp.support.converter.SimpleMessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.test.IntegrationTest;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.junit.rabbit.RabbitTestSupport;
 import org.springframework.cloud.stream.messaging.Sink;
 import org.springframework.context.annotation.Bean;
@@ -56,7 +55,6 @@ import static org.junit.Assert.assertThat;
  * @author Gary Russell
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = RabbitSinkTests.RabbitSinkApplication.class)
 @DirtiesContext
 public abstract class RabbitSinkTests {
 
@@ -78,7 +76,7 @@ public abstract class RabbitSinkTests {
 	@Autowired(required = false)
 	protected MessageConverter myConverter;
 
-	@IntegrationTest({ "rabbit.routingKey=scsapp-testq",
+	@SpringBootTest({ "rabbit.routingKey=scsapp-testq",
 		"rabbit.persistentDeliveryMode=true",
 		"rabbit.mappedRequestHeaders=STANDARD_REQUEST_HEADERS,bar" })
 	public static class SimpleRoutingKeyAndCustomHeaderTests extends RabbitSinkTests {
@@ -100,7 +98,7 @@ public abstract class RabbitSinkTests {
 
 	}
 
-	@IntegrationTest({ "rabbit.exchange=scsapp-testex",
+	@SpringBootTest({ "rabbit.exchange=scsapp-testex",
 		"rabbit.routingKey=scsapp-testrk",
 		"rabbit.converterBeanName=myConverter",
 		"rabbit.mappedRequestHeaders=STANDARD_REQUEST_HEADERS,bar" })
@@ -122,7 +120,7 @@ public abstract class RabbitSinkTests {
 
 	}
 
-	@IntegrationTest({ "rabbit.exchangeExpression='scsapp-testex'",
+	@SpringBootTest({ "rabbit.exchangeExpression='scsapp-testex'",
 		"rabbit.routingKeyExpression='scsapp-testrk'",
 		"rabbit.converterBeanName=jsonConverter" })
 	public static class ExchangeRoutingKeyExpressionsAndCustomHeaderTests extends RabbitSinkTests {

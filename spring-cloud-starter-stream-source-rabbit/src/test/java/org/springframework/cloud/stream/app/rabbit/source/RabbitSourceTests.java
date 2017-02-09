@@ -32,8 +32,7 @@ import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.test.IntegrationTest;
-import org.springframework.boot.test.SpringApplicationConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.junit.rabbit.RabbitTestSupport;
 import org.springframework.cloud.stream.messaging.Source;
 import org.springframework.cloud.stream.test.binder.MessageCollector;
@@ -56,7 +55,6 @@ import static org.junit.Assert.assertTrue;
  * @author Gary Russell
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringApplicationConfiguration(classes = RabbitSourceTests.RabbitSourceApplication.class)
 @DirtiesContext
 public abstract class RabbitSourceTests {
 
@@ -78,7 +76,7 @@ public abstract class RabbitSourceTests {
 	@Autowired
 	protected RabbitTemplate rabbitTemplate;
 
-	@IntegrationTest({ "rabbit.queues = scsapp-testq", "rabbit.enableRetry = true",
+	@SpringBootTest({ "rabbit.queues = scsapp-testq", "rabbit.enableRetry = true",
 		"rabbit.initialRetryInterval = 123", "rabbit.maxRetryInterval = 345", "rabbit.retryMultiplier = 1.5", "rabbit.maxAttempts = 5",
 		"rabbit.requeue = false",
 		"rabbit.mappedRequestHeaders = STANDARD_REQUEST_HEADERS,bar",
@@ -124,7 +122,7 @@ public abstract class RabbitSourceTests {
 
 	}
 
-	@IntegrationTest({ "rabbit.queues = scsapp-testq,scsapp-testq2", "rabbit.enableRetry = false",
+	@SpringBootTest({ "rabbit.queues = scsapp-testq,scsapp-testq2", "rabbit.enableRetry = false",
 		"rabbit.transacted = true",
 		"spring.rabbitmq.listener.acknowledgeMode = AUTO" })
 	public static class NoRetryAndTxTests extends RabbitSourceTests {
