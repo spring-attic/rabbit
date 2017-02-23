@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.springframework.cloud.stream.app</groupId>
     <artifactId>rabbit-app-dependencies</artifactId>
-    <version>1.1.2.BUILD-SNAPSHOT</version>
+    <version>1.1.2.M1</version>
     <packaging>pom</packaging>
     <name>rabbit-app-dependencies</name>
     <description>Spring Cloud Stream Rabbitmq App Dependencies</description>
@@ -20,17 +20,17 @@
             <dependency>
                 <groupId>org.springframework.cloud.stream.app</groupId>
                 <artifactId>spring-cloud-starter-stream-source-rabbit</artifactId>
-                <version>1.1.2.BUILD-SNAPSHOT</version>
+                <version>1.1.2.M1</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.cloud.stream.app</groupId>
                 <artifactId>spring-cloud-starter-stream-sink-rabbit</artifactId>
-                <version>1.1.2.BUILD-SNAPSHOT</version>
+                <version>1.1.2.M1</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.cloud.stream.app</groupId>
                 <artifactId>rabbit-app-starters-test-support</artifactId>
-                <version>1.1.2.BUILD-SNAPSHOT</version>
+                <version>1.1.2.M1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
