@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public abstract class RabbitSinkTests {
 			assertEquals("foo", new String(received.getBody()));
 			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
 			assertNull(received.getMessageProperties().getHeaders().get("qux"));
-			assertEquals(MessageDeliveryMode.PERSISTENT, received.getMessageProperties().getDeliveryMode());
+			assertEquals(MessageDeliveryMode.PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
 			assertThat(this.rabbitTemplate.getMessageConverter(), instanceOf(SimpleMessageConverter.class));
 		}
 
@@ -114,7 +114,7 @@ public abstract class RabbitSinkTests {
 			Message received = this.rabbitTemplate.receive("scsapp-testq");
 			assertEquals("\"foo\"", new String(received.getBody()));
 			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
-			assertEquals(MessageDeliveryMode.PERSISTENT, received.getMessageProperties().getDeliveryMode());
+			assertEquals(MessageDeliveryMode.PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
 			assertSame(this.myConverter, this.rabbitTemplate.getMessageConverter());
 		}
 
@@ -136,7 +136,7 @@ public abstract class RabbitSinkTests {
 			assertEquals("\"foo\"", new String(received.getBody()));
 			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
 			assertEquals("fiz", received.getMessageProperties().getHeaders().get("qux"));
-			assertEquals(MessageDeliveryMode.NON_PERSISTENT, received.getMessageProperties().getDeliveryMode());
+			assertEquals(MessageDeliveryMode.NON_PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
 		}
 
 	}
