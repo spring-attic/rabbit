@@ -94,6 +94,6 @@ $ ./mvnw clean package
 == Examples
 
 ```
-java -jar rabbit-source.jar --queues=
+java -jar rabbit-source.jar --rabbit.queues=
 ```
 
