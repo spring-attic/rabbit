@@ -83,7 +83,7 @@ $ ./mvnw clean package
 == Examples
 
 ```
-java -jar rabbit-sink.jar --routingKey=
-java -jar rabbit-sink.jar --routingKeyExpression=
+java -jar rabbit-sink.jar --rabbit.routingKey=
+java -jar rabbit-sink.jar --rabbit.routingKeyExpression=
 ```
 
