@@ -3,6 +3,40 @@
 
 This module sends messages to RabbitMQ.
 
+== Input
+
+=== Headers
+
+* `content-type: text/plain`
+
+=== Payload
+
+* `String`
+
+=== Headers
+
+* `content-type: application/octet-stream`
+
+=== Payload
+
+* `byte[]`
+
+=== Headers
+
+* `content-type: application/x-java-serialized-object`
+
+=== Payload
+
+* `java.io.Serializable`
+
+Note: With `converterBeanName = jsonConverter` any object that can be converted to JSON by Jackson (content type sent to rabbit will be `application/json` with type information in other headers.
+
+With `converterBeanName` set to something else, payload will be any object that the converter can handle. 
+
+== Output
+
+N/A
+
 == Options
 
 The **$$rabbit$$** $$sink$$ has the following options:
@@ -34,9 +68,22 @@ A well-known bean name `jsonConverter` will configure a `Jackson2JsonMessageConv
 In addition, a custom converter bean can be added to the context and referenced by the $$converterBeanName$$ property.
 
 //end::ref-doc[]
-
 == Build
 
 ```
-$ mvn clean package
+$ ./mvnw clean install -PgenerateApps
+$ cd apps
 ```
+You can find the corresponding binder based projects here.
+You can then cd into one of the folders and build it:
+```
+$ ./mvnw clean package
+```
+
+== Examples
+
+```
+java -jar rabbit-sink.jar --routingKey=
+java -jar rabbit-sink.jar --routingKeyExpression=
+```
+
