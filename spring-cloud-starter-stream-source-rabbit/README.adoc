@@ -78,7 +78,6 @@ Message deliveries failing with a _MessageConversionException_ are never retried
 could not be converted on the first attempt, subsequent attempts will also fail.
 Such messages are discarded (or dead-lettered).
 
-//end::ref-doc[]
 == Build
 
 ```
@@ -97,3 +96,4 @@ $ ./mvnw clean package
 java -jar rabbit-source.jar --rabbit.queues=
 ```
 
+//end::ref-doc[]
