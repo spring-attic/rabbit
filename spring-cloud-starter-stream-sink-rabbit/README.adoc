@@ -67,7 +67,6 @@ NOTE: By default, the message converter is a `SimpleMessageConverter` which hand
 A well-known bean name `jsonConverter` will configure a `Jackson2JsonMessageConverter` instead.
 In addition, a custom converter bean can be added to the context and referenced by the $$converterBeanName$$ property.
 
-//end::ref-doc[]
 == Build
 
 ```
@@ -87,3 +86,4 @@ java -jar rabbit-sink.jar --rabbit.routingKey=
 java -jar rabbit-sink.jar --rabbit.routingKeyExpression=
 ```
 
+//end::ref-doc[]
