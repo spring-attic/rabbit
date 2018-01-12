@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 
 package org.springframework.cloud.stream.app.rabbit.source;
 
-import org.aopalliance.aop.Advice;
-
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
@@ -28,14 +26,12 @@ import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
-import org.springframework.boot.autoconfigure.amqp.RabbitProperties.Listener;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.stream.annotation.Bindings;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.messaging.Source;
 import org.springframework.context.annotation.Bean;
+import org.springframework.integration.amqp.dsl.Amqp;
 import org.springframework.integration.amqp.inbound.AmqpInboundChannelAdapter;
-import org.springframework.integration.amqp.support.DefaultAmqpHeaderMapper;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.util.Assert;
 
@@ -46,6 +42,7 @@ import com.rabbitmq.client.Envelope;
  * A source module that receives data from RabbitMQ.
  *
  * @author Gary Russell
+ * @author Chris Schaefer
  */
 @EnableBinding(Source.class)
 @EnableConfigurationProperties(RabbitSourceProperties.class)
@@ -65,7 +62,6 @@ public class RabbitSourceConfiguration {
 			};
 
 	@Autowired
-	@Bindings(RabbitSourceConfiguration.class)
 	private Source channels;
 
 	@Autowired
@@ -80,24 +76,25 @@ public class RabbitSourceConfiguration {
 	@Bean
 	public SimpleMessageListenerContainer container() {
 		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.rabbitConnectionFactory);
-		Listener listenerProperties = this.rabbitProperties.getListener();
-		AcknowledgeMode acknowledgeMode = listenerProperties.getAcknowledgeMode();
+		RabbitProperties.SimpleContainer simpleContainer = this.rabbitProperties.getListener().getSimple();
+
+		AcknowledgeMode acknowledgeMode = simpleContainer.getAcknowledgeMode();
 		if (acknowledgeMode != null) {
 			container.setAcknowledgeMode(acknowledgeMode);
 		}
-		Integer concurrency = listenerProperties.getConcurrency();
+		Integer concurrency = simpleContainer.getConcurrency();
 		if (concurrency != null) {
 			container.setConcurrentConsumers(concurrency);
 		}
-		Integer maxConcurrency = listenerProperties.getMaxConcurrency();
+		Integer maxConcurrency = simpleContainer.getMaxConcurrency();
 		if (maxConcurrency != null) {
 			container.setMaxConcurrentConsumers(maxConcurrency);
 		}
-		Integer prefetch = listenerProperties.getPrefetch();
+		Integer prefetch = simpleContainer.getPrefetch();
 		if (prefetch != null) {
 			container.setPrefetchCount(prefetch);
 		}
-		Integer transactionSize = listenerProperties.getTransactionSize();
+		Integer transactionSize = simpleContainer.getTransactionSize();
 		if (transactionSize != null) {
 			container.setTxSize(transactionSize);
 		}
@@ -108,7 +105,7 @@ public class RabbitSourceConfiguration {
 		Assert.noNullElements(queues, "queues cannot have null elements");
 		container.setQueueNames(queues);
 		if (this.properties.isEnableRetry()) {
-			container.setAdviceChain(new Advice[] { rabbitSourceRetryInterceptor() });
+			container.setAdviceChain(rabbitSourceRetryInterceptor());
 		}
 		container.setMessagePropertiesConverter(inboundMessagePropertiesConverter);
 		return container;
@@ -116,12 +113,9 @@ public class RabbitSourceConfiguration {
 
 	@Bean
 	public AmqpInboundChannelAdapter adapter() {
-		AmqpInboundChannelAdapter adapter = new AmqpInboundChannelAdapter(container());
-		adapter.setOutputChannel(channels.output());
-		DefaultAmqpHeaderMapper headerMapper = new DefaultAmqpHeaderMapper();
-		headerMapper.setRequestHeaderNames(this.properties.getMappedRequestHeaders());
-		adapter.setHeaderMapper(headerMapper);
-		return adapter;
+		return Amqp.inboundAdapter(container()).outputChannel(channels.output())
+				.mappedRequestHeaders(properties.getMappedRequestHeaders())
+				.get();
 	}
 
 	@Bean

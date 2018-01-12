@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package org.springframework.cloud.stream.app.test.rabbit;
 
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Properties;
 
+import org.mockito.ArgumentMatchers;
 import org.springframework.amqp.rabbit.connection.Connection;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.cloud.stream.app.test.BinderTestPropertiesInitializer;
@@ -35,6 +35,7 @@ import com.rabbitmq.client.Channel;
  * Generated app test configuration for RabbitMQ Source.
  *
  * @author Gary Russell
+ * @author Chris Schaefer
  *
  */
 @Configuration
@@ -55,7 +56,7 @@ public class RabbitSourceTestConfiguration {
 		when(mockCF.createConnection()).thenReturn(mockConn);
 		Channel mockChannel = mock(Channel.class);
 		when(mockChannel.isOpen()).thenReturn(true);
-		when(mockConn.createChannel(anyBoolean())).thenReturn(mockChannel);
+		when(mockConn.createChannel(ArgumentMatchers.anyBoolean())).thenReturn(mockChannel);
 		return mockCF;
 	}
 

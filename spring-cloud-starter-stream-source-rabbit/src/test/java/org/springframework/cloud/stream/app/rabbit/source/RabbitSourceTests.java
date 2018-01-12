@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import static org.junit.Assert.assertTrue;
  * Tests for RabbitSource.
  *
  * @author Gary Russell
+ * @author Chris Schaefer
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
@@ -80,9 +81,9 @@ public abstract class RabbitSourceTests {
 		"rabbit.initialRetryInterval = 123", "rabbit.maxRetryInterval = 345", "rabbit.retryMultiplier = 1.5", "rabbit.maxAttempts = 5",
 		"rabbit.requeue = false",
 		"rabbit.mappedRequestHeaders = STANDARD_REQUEST_HEADERS,bar",
-		"spring.rabbitmq.listener.concurrency = 2", "spring.rabbitmq.listener.maxConcurrency = 3 ",
-		"spring.rabbitmq.listener.acknowledgeMode = NONE", "spring.rabbitmq.listener.prefetch = 10",
-		"spring.rabbitmq.listener.transactionSize = 5" })
+		"spring.rabbitmq.listener.simple.concurrency = 2", "spring.rabbitmq.listener.simple.maxConcurrency = 3 ",
+		"spring.rabbitmq.listener.simple.acknowledgeMode = NONE", "spring.rabbitmq.listener.simple.prefetch = 10",
+		"spring.rabbitmq.listener.simple.transactionSize = 5" })
 	public static class PropertiesPopulatedTests extends RabbitSourceTests {
 
 		@Test
