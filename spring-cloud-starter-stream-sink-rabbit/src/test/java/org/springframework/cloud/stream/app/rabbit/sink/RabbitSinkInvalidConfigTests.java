@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,22 @@ import org.junit.Test;
 
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.stream.app.rabbit.sink.RabbitSinkProperties;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
+import org.springframework.boot.context.properties.bind.validation.ValidationErrors;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.FieldError;
 
 /**
  * Tests for RabbitSource with invalid config.
  *
  * @author Gary Russell
+ * @author Chris Schaefer
  */
 public class RabbitSinkInvalidConfigTests {
 
 	@Test
-	public void testNoRoutingKey() throws Exception {
+	public void testNoRoutingKey() {
 		try {
 			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 			context.register(Config.class);
@@ -47,7 +50,12 @@ public class RabbitSinkInvalidConfigTests {
 		}
 		catch (Exception e) {
 			assertThat(e, instanceOf(BeanCreationException.class));
-			assertThat(e.getMessage(), containsString("routingKey or routingKeyExpression is required"));
+
+			BindValidationException bindValidationException = (BindValidationException) e.getCause().getCause();
+			ValidationErrors validationErrors = bindValidationException.getValidationErrors();
+			FieldError fieldError = (FieldError) validationErrors.getAllErrors().get(0);
+
+			assertThat(fieldError.getDefaultMessage(), containsString("routingKey or routingKeyExpression is required"));
 		}
 	}
 

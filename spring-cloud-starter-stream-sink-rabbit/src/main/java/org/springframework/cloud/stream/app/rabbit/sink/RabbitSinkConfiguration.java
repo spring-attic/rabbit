@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.messaging.Sink;
 import org.springframework.context.annotation.Bean;
-import org.springframework.integration.amqp.outbound.AmqpOutboundEndpoint;
-import org.springframework.integration.amqp.support.DefaultAmqpHeaderMapper;
+import org.springframework.expression.Expression;
+import org.springframework.integration.amqp.dsl.Amqp;
+import org.springframework.integration.amqp.dsl.AmqpOutboundEndpointSpec;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageHandler;
 
@@ -37,6 +38,7 @@ import org.springframework.messaging.MessageHandler;
  * A sink module that sends data to RabbitMQ.
  *
  * @author Gary Russell
+ * @author Chris Schaefer
  */
 @EnableBinding(Sink.class)
 @EnableConfigurationProperties(RabbitSinkProperties.class)
@@ -51,26 +53,28 @@ public class RabbitSinkConfiguration {
 	@ServiceActivator(inputChannel = Sink.INPUT)
 	@Bean
 	public MessageHandler amqpChannelAdapter(ConnectionFactory rabbitConnectionFactory) {
-		AmqpOutboundEndpoint handler = new AmqpOutboundEndpoint(rabbitTemplate(rabbitConnectionFactory));
-		DefaultAmqpHeaderMapper mapper = new DefaultAmqpHeaderMapper();
-		mapper.setRequestHeaderNames(this.properties.getMappedRequestHeaders());
-		handler.setHeaderMapper(mapper);
-		handler.setDefaultDeliveryMode(this.properties.getPersistentDeliveryMode()
-										? MessageDeliveryMode.PERSISTENT
-										: MessageDeliveryMode.NON_PERSISTENT);
-		if (this.properties.getExchangeExpression() == null) {
-			handler.setExchangeName(this.properties.getExchange());
+		AmqpOutboundEndpointSpec handler = Amqp.outboundAdapter(rabbitTemplate(rabbitConnectionFactory))
+				.mappedRequestHeaders(properties.getMappedRequestHeaders())
+				.defaultDeliveryMode(properties.getPersistentDeliveryMode() ? MessageDeliveryMode.PERSISTENT
+						: MessageDeliveryMode.NON_PERSISTENT);
+
+		Expression exchangeExpression = this.properties.getExchangeExpression();
+		if (exchangeExpression != null) {
+			handler.exchangeNameExpression(exchangeExpression);
 		}
 		else {
-			handler.setExpressionExchangeName(this.properties.getExchangeExpression());
+			handler.exchangeName(this.properties.getExchange());
 		}
-		if (this.properties.getRoutingKeyExpression() == null) {
-			handler.setRoutingKey(this.properties.getRoutingKey());
+
+		Expression routingKeyExpression = this.properties.getRoutingKeyExpression();
+		if (routingKeyExpression != null) {
+			handler.routingKeyExpression(routingKeyExpression);
 		}
 		else {
-			handler.setExpressionRoutingKey(this.properties.getRoutingKeyExpression());
+			handler.routingKey(this.properties.getRoutingKey());
 		}
-		return handler;
+
+		return handler.get();
 	}
 
 	@Bean

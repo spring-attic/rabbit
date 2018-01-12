@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,54 +16,67 @@
 
 package org.springframework.cloud.stream.app.rabbit.source;
 
-import org.junit.Test;
-
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.util.EnvironmentTestUtils;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Configuration;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
 
+import org.junit.Test;
+
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
+import org.springframework.boot.context.properties.bind.validation.ValidationErrors;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.FieldError;
+
 /**
  * Tests for RabbitSource with invalid config.
  *
  * @author Gary Russell
+ * @author Chris Schaefer
  */
 public class RabbitSourceInvalidConfigTests {
 
 	@Test
-	public void testNoQueues() throws Exception {
+	public void testNoQueues() {
 		try {
 			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-			EnvironmentTestUtils.addEnvironment(context, "rabbit.enableRetry:false");
+			TestPropertyValues.of("rabbit.enableRetry:false").applyTo(context);
 			context.register(Config.class);
 			context.refresh();
 			fail("BeanCreationException expected");
 		}
 		catch (Exception e) {
 			assertThat(e, instanceOf(BeanCreationException.class));
-			assertThat(e.getMessage(), containsString("queue(s) are required"));
+			assertThat(extractedValidationMessage(e), containsString("queue(s) are required"));
 		}
 	}
 
 	@Test
-	public void testEmptyQueues() throws Exception {
+	public void testEmptyQueues() {
 		try {
 			AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-			EnvironmentTestUtils.addEnvironment(context, "rabbit.enableRetry:false", "rabbit.queues:");
+			TestPropertyValues.of("rabbit.enableRetry:false").applyTo(context);
+			TestPropertyValues.of("rabbit.queues:").applyTo(context);
 			context.register(Config.class);
 			context.refresh();
 			fail("BeanCreationException expected");
 		}
 		catch (Exception e) {
 			assertThat(e, instanceOf(BeanCreationException.class));
-			assertThat(e.getMessage(), containsString("At least one queue is required"));
+			assertThat(extractedValidationMessage(e), containsString("At least one queue is required"));
 		}
+	}
+
+	private String extractedValidationMessage(Exception e) {
+		BindValidationException bindValidationException = (BindValidationException) e.getCause().getCause();
+		ValidationErrors validationErrors = bindValidationException.getValidationErrors();
+		FieldError fieldError = (FieldError) validationErrors.getAllErrors().get(0);
+
+		return fieldError.getDefaultMessage();
 	}
 
 	@Configuration
