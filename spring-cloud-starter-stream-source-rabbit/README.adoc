@@ -50,10 +50,13 @@ $$rabbit.queues$$:: $$The queues to which the source will listen for messages.$$
 $$rabbit.requeue$$:: $$Whether rejected messages should be requeued.$$ *($$Boolean$$, default: `$$true$$`)*
 $$rabbit.retry-multiplier$$:: $$Retry backoff multiplier when retry is enabled.$$ *($$Double$$, default: `$$2$$`)*
 $$rabbit.transacted$$:: $$Whether the channel is transacted.$$ *($$Boolean$$, default: `$$false$$`)*
-$$spring.rabbitmq.addresses$$:: $$Comma-separated list of addresses to which the client should connect to.$$ *($$String$$, default: `$$<none>$$`)*
+$$spring.rabbitmq.addresses$$:: $$Comma-separated list of addresses to which the client should connect.$$ *($$String$$, default: `$$<none>$$`)*
+$$spring.rabbitmq.connection-timeout$$:: $$Connection timeout, in milliseconds; zero for infinite.$$ *($$Integer$$, default: `$$<none>$$`)*
 $$spring.rabbitmq.host$$:: $$RabbitMQ host.$$ *($$String$$, default: `$$localhost$$`)*
 $$spring.rabbitmq.password$$:: $$Login to authenticate against the broker.$$ *($$String$$, default: `$$<none>$$`)*
 $$spring.rabbitmq.port$$:: $$RabbitMQ port.$$ *($$Integer$$, default: `$$5672$$`)*
+$$spring.rabbitmq.publisher-confirms$$:: $$Enable publisher confirms.$$ *($$Boolean$$, default: `$$false$$`)*
+$$spring.rabbitmq.publisher-returns$$:: $$Enable publisher returns.$$ *($$Boolean$$, default: `$$false$$`)*
 $$spring.rabbitmq.requested-heartbeat$$:: $$Requested heartbeat timeout, in seconds; zero for none.$$ *($$Integer$$, default: `$$<none>$$`)*
 $$spring.rabbitmq.username$$:: $$Login user to authenticate to the broker.$$ *($$String$$, default: `$$<none>$$`)*
 $$spring.rabbitmq.virtual-host$$:: $$Virtual host to use when connecting to the broker.$$ *($$String$$, default: `$$<none>$$`)*
