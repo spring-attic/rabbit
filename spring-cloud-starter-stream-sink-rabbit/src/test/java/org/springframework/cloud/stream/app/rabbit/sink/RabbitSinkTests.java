@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2017 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -43,6 +44,7 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -75,6 +77,9 @@ public abstract class RabbitSinkTests {
 
 	@Autowired(required = false)
 	protected MessageConverter myConverter;
+
+	@Autowired
+	protected CachingConnectionFactory bootFactory;
 
 	@SpringBootTest({ "rabbit.routingKey=scsapp-testq",
 		"rabbit.persistentDeliveryMode=true",
@@ -137,6 +142,25 @@ public abstract class RabbitSinkTests {
 			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
 			assertEquals("fiz", received.getMessageProperties().getHeaders().get("qux"));
 			assertEquals(MessageDeliveryMode.NON_PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
+		}
+
+	}
+
+	@SpringBootTest({ "rabbit.routingKey=scsapp-testOwn",
+		"rabbit.own-connection=true" })
+	public static class OwnConnectionTest extends RabbitSinkTests {
+
+		@Test
+		public void test() throws Exception {
+			this.rabbitAdmin.declareQueue(
+					new Queue("scsapp-testOwn", false, false, true));
+			this.bootFactory.resetConnection();
+			this.channels.input().send(MessageBuilder.withPayload("foo")
+										.build());
+			this.rabbitTemplate.setReceiveTimeout(10000);
+			Message received = this.rabbitTemplate.receive("scsapp-testOwn");
+			assertEquals("foo", new String(received.getBody()));
+			assertThat(this.bootFactory.getCacheProperties().getProperty("localPort")).isEqualTo("0");
 		}
 
 	}

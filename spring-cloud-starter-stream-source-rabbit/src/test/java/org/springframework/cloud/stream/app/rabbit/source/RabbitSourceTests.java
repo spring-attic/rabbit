@@ -16,12 +16,6 @@
 
 package org.springframework.cloud.stream.app.rabbit.source;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.TimeUnit;
 
 import org.aopalliance.aop.Advice;
@@ -33,6 +27,8 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -48,6 +44,13 @@ import org.springframework.messaging.Message;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for RabbitSource.
@@ -76,6 +79,12 @@ public abstract class RabbitSourceTests {
 
 	@Autowired
 	protected RabbitTemplate rabbitTemplate;
+
+	@Autowired
+	protected RabbitAdmin rabbitAdmin;
+
+	@Autowired
+	protected CachingConnectionFactory bootFactory;
 
 	@SpringBootTest({ "rabbit.queues = scsapp-testq", "rabbit.enableRetry = true",
 			"rabbit.initialRetryInterval = 123", "rabbit.maxRetryInterval = 345", "rabbit.retryMultiplier = 1.5",
@@ -140,6 +149,23 @@ public abstract class RabbitSourceTests {
 
 	}
 
+	@SpringBootTest({ "rabbit.queues=scsapp-testOwnSource",
+			"rabbit.enableRetry=false",
+			"rabbit.own-connection=true"})
+	public static class OwnConnectionTests extends RabbitSourceTests {
+
+		@Test
+		public void test() throws Exception {
+			this.rabbitTemplate.convertAndSend("scsapp-testOwnSource", "foo");
+			this.bootFactory.resetConnection(); // close Boot's connection
+			Message<?> out = this.messageCollector.forChannel(this.channels.output()).poll(10,  TimeUnit.SECONDS);
+			assertNotNull(out);
+			assertEquals("foo", out.getPayload());
+			assertThat(this.bootFactory.getCacheProperties().getProperty("localPort")).isEqualTo("0");
+		}
+
+	}
+
 	@SpringBootApplication
 	static class RabbitSourceApplication {
 
@@ -151,6 +177,11 @@ public abstract class RabbitSourceTests {
 		@Bean
 		public Queue queue2() {
 			return new Queue("scsapp-testq2", false, false, true);
+		}
+
+		@Bean
+		public Queue own() {
+			return new Queue("scsapp-testOwnSource", false, false, true);
 		}
 
 	}

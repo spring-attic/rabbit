@@ -19,12 +19,17 @@ package org.springframework.cloud.stream.app.rabbit.source;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.stream.annotation.EnableBinding;
@@ -46,7 +51,7 @@ import com.rabbitmq.client.Envelope;
  */
 @EnableBinding(Source.class)
 @EnableConfigurationProperties(RabbitSourceProperties.class)
-public class RabbitSourceConfiguration {
+public class RabbitSourceConfiguration implements DisposableBean {
 
 	private static final MessagePropertiesConverter inboundMessagePropertiesConverter =
 			new DefaultMessagePropertiesConverter() {
@@ -68,14 +73,22 @@ public class RabbitSourceConfiguration {
 	private RabbitProperties rabbitProperties;
 
 	@Autowired
+	private ObjectProvider<ConnectionNameStrategy> connectionNameStrategy;
+
+	@Autowired
 	private RabbitSourceProperties properties;
 
 	@Autowired
 	private ConnectionFactory rabbitConnectionFactory;
 
+	private CachingConnectionFactory ownConnectionFactory;
+
 	@Bean
-	public SimpleMessageListenerContainer container() {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.rabbitConnectionFactory);
+	public SimpleMessageListenerContainer container() throws Exception {
+		ConnectionFactory connectionFactory = this.properties.isOwnConnection()
+				? buildLocalConnectionFactory()
+				: this.rabbitConnectionFactory;
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		RabbitProperties.SimpleContainer simpleContainer = this.rabbitProperties.getListener().getSimple();
 
 		AcknowledgeMode acknowledgeMode = simpleContainer.getAcknowledgeMode();
@@ -111,8 +124,14 @@ public class RabbitSourceConfiguration {
 		return container;
 	}
 
+	private ConnectionFactory buildLocalConnectionFactory() throws Exception {
+		this.ownConnectionFactory = new AutoConfig.Creator().rabbitConnectionFactory(this.rabbitProperties,
+				this.connectionNameStrategy);
+		return this.ownConnectionFactory;
+	}
+
 	@Bean
-	public AmqpInboundChannelAdapter adapter() {
+	public AmqpInboundChannelAdapter adapter() throws Exception {
 		return Amqp.inboundAdapter(container()).outputChannel(channels.output())
 				.mappedRequestHeaders(properties.getMappedRequestHeaders())
 				.get();
@@ -126,6 +145,37 @@ public class RabbitSourceConfiguration {
 						this.properties.getMaxRetryInterval())
 				.recoverer(new RejectAndDontRequeueRecoverer())
 				.build();
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		if (this.ownConnectionFactory != null) {
+			this.ownConnectionFactory.destroy();
+		}
+	}
+
+}
+
+class AutoConfig extends RabbitAutoConfiguration {
+
+	static class Creator extends RabbitConnectionFactoryCreator {
+
+		@Override
+		public CachingConnectionFactory rabbitConnectionFactory(RabbitProperties config,
+				ObjectProvider<ConnectionNameStrategy> connectionNameStrategy) throws Exception {
+			CachingConnectionFactory cf = super.rabbitConnectionFactory(config, connectionNameStrategy);
+			cf.setConnectionNameStrategy(new ConnectionNameStrategy() {
+
+				@Override
+				public String obtainNewConnectionName(ConnectionFactory connectionFactory) {
+					return "rabbit.source.own.connection";
+				}
+
+			});
+			cf.afterPropertiesSet();
+			return cf;
+		}
+
 	}
 
 }
