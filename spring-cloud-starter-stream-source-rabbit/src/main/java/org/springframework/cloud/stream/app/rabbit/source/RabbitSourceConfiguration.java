@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,19 @@ import org.aopalliance.aop.Advice;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.rabbit.support.DefaultMessagePropertiesConverter;
 import org.springframework.amqp.rabbit.support.MessagePropertiesConverter;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties.Listener;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.stream.annotation.Bindings;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.messaging.Source;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +52,7 @@ import com.rabbitmq.client.Envelope;
  */
 @EnableBinding(Source.class)
 @EnableConfigurationProperties(RabbitSourceProperties.class)
-public class RabbitSourceConfiguration {
+public class RabbitSourceConfiguration implements DisposableBean {
 
 	private static final MessagePropertiesConverter inboundMessagePropertiesConverter =
 			new DefaultMessagePropertiesConverter() {
@@ -65,8 +68,10 @@ public class RabbitSourceConfiguration {
 			};
 
 	@Autowired
-	@Bindings(RabbitSourceConfiguration.class)
 	private Source channels;
+
+	@Autowired
+	private RabbitProperties bootProperties;
 
 	@Autowired
 	private RabbitProperties rabbitProperties;
@@ -77,27 +82,32 @@ public class RabbitSourceConfiguration {
 	@Autowired
 	private ConnectionFactory rabbitConnectionFactory;
 
+	private CachingConnectionFactory ownConnectionFactory;
+
 	@Bean
-	public SimpleMessageListenerContainer container() {
-		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(this.rabbitConnectionFactory);
+	public SimpleMessageListenerContainer container() throws Exception {
+		ConnectionFactory connectionFactory = this.properties.isOwnConnection()
+				? buildLocalConnectionFactory()
+				: this.rabbitConnectionFactory;
+		SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
 		Listener listenerProperties = this.rabbitProperties.getListener();
-		AcknowledgeMode acknowledgeMode = listenerProperties.getAcknowledgeMode();
+		AcknowledgeMode acknowledgeMode = listenerProperties.getSimple().getAcknowledgeMode();
 		if (acknowledgeMode != null) {
 			container.setAcknowledgeMode(acknowledgeMode);
 		}
-		Integer concurrency = listenerProperties.getConcurrency();
+		Integer concurrency = listenerProperties.getSimple().getConcurrency();
 		if (concurrency != null) {
 			container.setConcurrentConsumers(concurrency);
 		}
-		Integer maxConcurrency = listenerProperties.getMaxConcurrency();
+		Integer maxConcurrency = listenerProperties.getSimple().getMaxConcurrency();
 		if (maxConcurrency != null) {
 			container.setMaxConcurrentConsumers(maxConcurrency);
 		}
-		Integer prefetch = listenerProperties.getPrefetch();
+		Integer prefetch = listenerProperties.getSimple().getPrefetch();
 		if (prefetch != null) {
 			container.setPrefetchCount(prefetch);
 		}
-		Integer transactionSize = listenerProperties.getTransactionSize();
+		Integer transactionSize = listenerProperties.getSimple().getTransactionSize();
 		if (transactionSize != null) {
 			container.setTxSize(transactionSize);
 		}
@@ -114,11 +124,16 @@ public class RabbitSourceConfiguration {
 		return container;
 	}
 
+	private ConnectionFactory buildLocalConnectionFactory() throws Exception {
+		this.ownConnectionFactory = new AutoConfig.Creator().rabbitConnectionFactory(this.bootProperties);
+		return this.ownConnectionFactory;
+	}
+
 	@Bean
-	public AmqpInboundChannelAdapter adapter() {
+	public AmqpInboundChannelAdapter adapter() throws Exception {
 		AmqpInboundChannelAdapter adapter = new AmqpInboundChannelAdapter(container());
 		adapter.setOutputChannel(channels.output());
-		DefaultAmqpHeaderMapper headerMapper = new DefaultAmqpHeaderMapper();
+		DefaultAmqpHeaderMapper headerMapper = DefaultAmqpHeaderMapper.inboundMapper();
 		headerMapper.setRequestHeaderNames(this.properties.getMappedRequestHeaders());
 		adapter.setHeaderMapper(headerMapper);
 		return adapter;
@@ -134,4 +149,35 @@ public class RabbitSourceConfiguration {
 				.build();
 	}
 
+	@Override
+	public void destroy() throws Exception {
+		if (this.ownConnectionFactory != null) {
+			this.ownConnectionFactory.destroy();
+		}
+	}
+
 }
+
+class AutoConfig extends RabbitAutoConfiguration {
+
+	static class Creator extends RabbitConnectionFactoryCreator {
+
+		@Override
+		public CachingConnectionFactory rabbitConnectionFactory(RabbitProperties config) throws Exception {
+			CachingConnectionFactory cf = super.rabbitConnectionFactory(config);
+			cf.setConnectionNameStrategy(new ConnectionNameStrategy() {
+
+				@Override
+				public String obtainNewConnectionName(ConnectionFactory connectionFactory) {
+					return "rabbit.source.own.connection";
+				}
+
+			});
+			cf.afterPropertiesSet();
+			return cf;
+		}
+
+	}
+
+}
+

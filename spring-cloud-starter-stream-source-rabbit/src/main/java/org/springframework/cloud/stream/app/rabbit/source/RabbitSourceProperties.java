@@ -76,6 +76,11 @@ public class RabbitSourceProperties {
 	 */
 	private boolean enableRetry = false;
 
+	/**
+	 * When true, use a separate connection based on the boot properties.
+	 */
+	private boolean ownConnection;
+
 	public boolean getRequeue() {
 		return requeue;
 	}
@@ -149,6 +154,14 @@ public class RabbitSourceProperties {
 
 	public void setEnableRetry(boolean enableRetry) {
 		this.enableRetry = enableRetry;
+	}
+
+	public boolean isOwnConnection() {
+		return this.ownConnection;
+	}
+
+	public void setOwnConnection(boolean ownConnection) {
+		this.ownConnection = ownConnection;
 	}
 
 }

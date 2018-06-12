@@ -71,6 +71,11 @@ public class RabbitSinkProperties {
 	 */
 	private String converterBeanName;
 
+	/**
+	 * When true, use a separate connection based on the boot properties.
+	 */
+	private boolean ownConnection;
+
 	public String getExchange() {
 		return this.exchange;
 	}
@@ -130,6 +135,14 @@ public class RabbitSinkProperties {
 	@AssertTrue(message = "routingKey or routingKeyExpression is required")
 	public boolean isRoutingKeyProvided() {
 		return this.routingKey != null || this.routingKeyExpression != null;
+	}
+
+	public boolean isOwnConnection() {
+		return this.ownConnection;
+	}
+
+	public void setOwnConnection(boolean ownConnection) {
+		this.ownConnection = ownConnection;
 	}
 
 }

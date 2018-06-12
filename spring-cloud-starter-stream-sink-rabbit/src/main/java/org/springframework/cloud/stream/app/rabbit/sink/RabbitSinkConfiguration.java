@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,17 @@
 package org.springframework.cloud.stream.app.rabbit.sink;
 
 import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
+import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.stream.annotation.EnableBinding;
@@ -40,7 +45,10 @@ import org.springframework.messaging.MessageHandler;
  */
 @EnableBinding(Sink.class)
 @EnableConfigurationProperties(RabbitSinkProperties.class)
-public class RabbitSinkConfiguration {
+public class RabbitSinkConfiguration implements DisposableBean {
+
+	@Autowired
+	private RabbitProperties bootProperties;
 
 	@Autowired
 	private RabbitSinkProperties properties;
@@ -48,11 +56,16 @@ public class RabbitSinkConfiguration {
 	@Value("#{${rabbit.converterBeanName:null}}")
 	private MessageConverter messageConverter;
 
+	private CachingConnectionFactory ownConnectionFactory;
+
 	@ServiceActivator(inputChannel = Sink.INPUT)
 	@Bean
-	public MessageHandler amqpChannelAdapter(ConnectionFactory rabbitConnectionFactory) {
-		AmqpOutboundEndpoint handler = new AmqpOutboundEndpoint(rabbitTemplate(rabbitConnectionFactory));
-		DefaultAmqpHeaderMapper mapper = new DefaultAmqpHeaderMapper();
+	public MessageHandler amqpChannelAdapter(ConnectionFactory rabbitConnectionFactory) throws Exception {
+		ConnectionFactory connectionFactory = this.properties.isOwnConnection()
+				? buildLocalConnectionFactory()
+				: rabbitConnectionFactory;
+		AmqpOutboundEndpoint handler = new AmqpOutboundEndpoint(rabbitTemplate(connectionFactory));
+		DefaultAmqpHeaderMapper mapper = DefaultAmqpHeaderMapper.outboundMapper();
 		mapper.setRequestHeaderNames(this.properties.getMappedRequestHeaders());
 		handler.setHeaderMapper(mapper);
 		handler.setDefaultDeliveryMode(this.properties.getPersistentDeliveryMode()
@@ -62,15 +75,20 @@ public class RabbitSinkConfiguration {
 			handler.setExchangeName(this.properties.getExchange());
 		}
 		else {
-			handler.setExpressionExchangeName(this.properties.getExchangeExpression());
+			handler.setExchangeNameExpression(this.properties.getExchangeExpression());
 		}
 		if (this.properties.getRoutingKeyExpression() == null) {
 			handler.setRoutingKey(this.properties.getRoutingKey());
 		}
 		else {
-			handler.setExpressionRoutingKey(this.properties.getRoutingKeyExpression());
+			handler.setRoutingKeyExpression(this.properties.getRoutingKeyExpression());
 		}
 		return handler;
+	}
+
+	private ConnectionFactory buildLocalConnectionFactory() throws Exception {
+		this.ownConnectionFactory = new AutoConfig.Creator().rabbitConnectionFactory(this.bootProperties);
+		return this.ownConnectionFactory;
 	}
 
 	@Bean
@@ -86,6 +104,36 @@ public class RabbitSinkConfiguration {
 	@ConditionalOnProperty(name = "rabbit.converterBeanName", havingValue = RabbitSinkProperties.JSON_CONVERTER)
 	public Jackson2JsonMessageConverter jsonConverter() {
 		return new Jackson2JsonMessageConverter();
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		if (this.ownConnectionFactory != null) {
+			this.ownConnectionFactory.destroy();
+		}
+	}
+
+}
+
+class AutoConfig extends RabbitAutoConfiguration {
+
+	static class Creator extends RabbitConnectionFactoryCreator {
+
+		@Override
+		public CachingConnectionFactory rabbitConnectionFactory(RabbitProperties config) throws Exception {
+			CachingConnectionFactory cf = super.rabbitConnectionFactory(config);
+			cf.setConnectionNameStrategy(new ConnectionNameStrategy() {
+
+				@Override
+				public String obtainNewConnectionName(ConnectionFactory connectionFactory) {
+					return "rabbit.sink.own.connection";
+				}
+
+			});
+			cf.afterPropertiesSet();
+			return cf;
+		}
+
 	}
 
 }

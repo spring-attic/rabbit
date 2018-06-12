@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2016-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.support.AmqpHeaders;
@@ -43,6 +45,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -75,6 +78,12 @@ public abstract class RabbitSourceTests {
 
 	@Autowired
 	protected RabbitTemplate rabbitTemplate;
+
+	@Autowired
+	protected RabbitAdmin rabbitAdmin;
+
+	@Autowired
+	protected CachingConnectionFactory bootFactory;
 
 	@SpringBootTest({ "rabbit.queues = scsapp-testq", "rabbit.enableRetry = true",
 		"rabbit.initialRetryInterval = 123", "rabbit.maxRetryInterval = 345", "rabbit.retryMultiplier = 1.5", "rabbit.maxAttempts = 5",
@@ -139,6 +148,23 @@ public abstract class RabbitSourceTests {
 
 	}
 
+	@SpringBootTest({ "rabbit.queues=scsapp-testOwnSource",
+			"rabbit.enableRetry=false",
+			"rabbit.own-connection=true"})
+	public static class OwnConnectionTests extends RabbitSourceTests {
+
+		@Test
+		public void test() throws Exception {
+			this.rabbitTemplate.convertAndSend("scsapp-testOwnSource", "foo");
+			this.bootFactory.resetConnection(); // close Boot's connection
+			Message<?> out = this.messageCollector.forChannel(this.channels.output()).poll(10,  TimeUnit.SECONDS);
+			assertNotNull(out);
+			assertEquals("foo", out.getPayload());
+			assertThat(this.bootFactory.getCacheProperties().getProperty("localPort")).isEqualTo("0");
+		}
+
+	}
+
 	@SpringBootApplication
 	static class RabbitSourceApplication {
 
@@ -150,6 +176,11 @@ public abstract class RabbitSourceTests {
 		@Bean
 		public Queue queue2() {
 			return new Queue("scsapp-testq2", false, false, true);
+		}
+
+		@Bean
+		public Queue own() {
+			return new Queue("scsapp-testOwnSource", false, false, true);
 		}
 
 	}
