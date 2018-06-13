@@ -71,9 +71,6 @@ public class RabbitSourceConfiguration implements DisposableBean {
 	private Source channels;
 
 	@Autowired
-	private RabbitProperties bootProperties;
-
-	@Autowired
 	private RabbitProperties rabbitProperties;
 
 	@Autowired
@@ -125,7 +122,7 @@ public class RabbitSourceConfiguration implements DisposableBean {
 	}
 
 	private ConnectionFactory buildLocalConnectionFactory() throws Exception {
-		this.ownConnectionFactory = new AutoConfig.Creator().rabbitConnectionFactory(this.bootProperties);
+		this.ownConnectionFactory = new AutoConfig.Creator().rabbitConnectionFactory(this.rabbitProperties);
 		return this.ownConnectionFactory;
 	}
 
