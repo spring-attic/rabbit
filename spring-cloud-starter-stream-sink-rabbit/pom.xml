@@ -23,6 +23,10 @@
 			<artifactId>spring-cloud-stream-binder-rabbit-test-support</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud.stream.app</groupId>
+			<artifactId>app-starters-micrometer-common</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -48,6 +52,12 @@
 							<extraTestConfigClass>org.springframework.cloud.stream.app.test.rabbit.RabbitSinkTestConfiguration.class</extraTestConfigClass>
 						</rabbit-sink>
 					</generatedApps>
+					<additionalGlobalDependencies>
+						<dependency>
+							<groupId>org.springframework.cloud</groupId>
+							<artifactId>spring-cloud-starter-config</artifactId>
+						</dependency>
+					</additionalGlobalDependencies>
 				</configuration>
 			</plugin>
 		</plugins>
