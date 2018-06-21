@@ -43,7 +43,7 @@ The **$$rabbit$$** $$source$$ has the following options:
 //tag::configuration-properties[]
 $$rabbit.enable-retry$$:: $$true to enable retry.$$ *($$Boolean$$, default: `$$false$$`)*
 $$rabbit.initial-retry-interval$$:: $$Initial retry interval when retry is enabled.$$ *($$Integer$$, default: `$$1000$$`)*
-$$rabbit.mapped-request-headers$$:: $$Headers that will be mapped.$$ *($$String)[]$$, default: `$$[STANDARD_REQUEST_HEADERS]$$`)*
+$$rabbit.mapped-request-headers$$:: $$Headers that will be mapped.$$ *($$String[]$$, default: `$$[STANDARD_REQUEST_HEADERS]$$`)*
 $$rabbit.max-attempts$$:: $$The maximum delivery attempts when retry is enabled.$$ *($$Integer$$, default: `$$3$$`)*
 $$rabbit.max-retry-interval$$:: $$Max retry interval when retry is enabled.$$ *($$Integer$$, default: `$$30000$$`)*
 $$rabbit.own-connection$$:: $$When true, use a separate connection based on the boot properties.$$ *($$Boolean$$, default: `$$false$$`)*
