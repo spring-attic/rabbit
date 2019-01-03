@@ -48,9 +48,6 @@
 							<extraTestConfigClass>org.springframework.cloud.stream.app.test.rabbit.RabbitSinkTestConfiguration.class</extraTestConfigClass>
 						</rabbit-sink>
 					</generatedApps>
-					<additionalAppProperties>
-						<additionalAppProperty>spring.cloud.stream.bindings.input.contentType=text/plain</additionalAppProperty>
-					</additionalAppProperties>
 					<additionalGlobalDependencies>
 						<dependency>
 							<groupId>org.springframework.cloud</groupId>
