@@ -58,8 +58,7 @@ $$spring.rabbitmq.password$$:: $$Login to authenticate against the broker.$$ *($
 $$spring.rabbitmq.port$$:: $$RabbitMQ port.$$ *($$Integer$$, default: `$$5672$$`)*
 $$spring.rabbitmq.publisher-confirms$$:: $$Whether to enable publisher confirms.$$ *($$Boolean$$, default: `$$false$$`)*
 $$spring.rabbitmq.publisher-returns$$:: $$Whether to enable publisher returns.$$ *($$Boolean$$, default: `$$false$$`)*
-$$spring.rabbitmq.requested-heartbeat$$:: $$Requested heartbeat timeout; zero for none. If a duration suffix is not specified,
- seconds will be used.$$ *($$Duration$$, default: `$$<none>$$`)*
+$$spring.rabbitmq.requested-heartbeat$$:: $$Requested heartbeat timeout; zero for none. If a duration suffix is not specified, seconds will be used.$$ *($$Duration$$, default: `$$<none>$$`)*
 $$spring.rabbitmq.username$$:: $$Login user to authenticate to the broker.$$ *($$String$$, default: `$$guest$$`)*
 $$spring.rabbitmq.virtual-host$$:: $$Virtual host to use when connecting to the broker.$$ *($$String$$, default: `$$<none>$$`)*
 //end::configuration-properties[]
