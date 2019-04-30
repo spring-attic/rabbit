@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,20 @@
 
 package org.springframework.cloud.stream.app.rabbit.sink;
 
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConversionException;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.amqp.RabbitProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.cloud.stream.messaging.Sink;
@@ -39,12 +39,14 @@ import org.springframework.integration.amqp.dsl.Amqp;
 import org.springframework.integration.amqp.dsl.AmqpOutboundEndpointSpec;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.MessageHandler;
+import org.springframework.util.Assert;
 
 /**
  * A sink module that sends data to RabbitMQ.
  *
  * @author Gary Russell
  * @author Chris Schaefer
+ * @author Artem Bilan
  */
 @EnableBinding(Sink.class)
 @EnableConfigurationProperties(RabbitSinkProperties.class)
@@ -59,17 +61,14 @@ public class RabbitSinkConfiguration implements DisposableBean {
 	@Autowired
 	private RabbitSinkProperties properties;
 
-	@Value("#{${rabbit.converterBeanName:null}}")
-	private MessageConverter messageConverter;
-
 	private CachingConnectionFactory ownConnectionFactory;
 
 	@ServiceActivator(inputChannel = Sink.INPUT)
 	@Bean
 	public MessageHandler amqpChannelAdapter(ConnectionFactory rabbitConnectionFactory) throws Exception {
 		AmqpOutboundEndpointSpec handler = Amqp.outboundAdapter(rabbitTemplate(this.properties.isOwnConnection()
-						? buildLocalConnectionFactory()
-						: rabbitConnectionFactory))
+				? buildLocalConnectionFactory()
+				: rabbitConnectionFactory))
 				.mappedRequestHeaders(properties.getMappedRequestHeaders())
 				.defaultDeliveryMode(properties.getPersistentDeliveryMode()
 						? MessageDeliveryMode.PERSISTENT
@@ -103,45 +102,45 @@ public class RabbitSinkConfiguration implements DisposableBean {
 	@Bean
 	public RabbitTemplate rabbitTemplate(ConnectionFactory rabbitConnectionFactory) {
 		RabbitTemplate rabbitTemplate = new RabbitTemplate(rabbitConnectionFactory);
-		if (this.messageConverter != null) {
-			rabbitTemplate.setMessageConverter(this.messageConverter);
-		}
+		rabbitTemplate.setMessageConverter(new PassThroughMessageConverter());
 		return rabbitTemplate;
 	}
 
-	@Bean
-	@ConditionalOnProperty(name = "rabbit.converterBeanName", havingValue = RabbitSinkProperties.JSON_CONVERTER)
-	public Jackson2JsonMessageConverter jsonConverter() {
-		return new Jackson2JsonMessageConverter();
-	}
-
 	@Override
-	public void destroy() throws Exception {
+	public void destroy() {
 		if (this.ownConnectionFactory != null) {
 			this.ownConnectionFactory.destroy();
 		}
 	}
 
-}
+	private static class AutoConfig extends RabbitAutoConfiguration {
 
-class AutoConfig extends RabbitAutoConfiguration {
+		private static class Creator extends RabbitConnectionFactoryCreator {
 
-	static class Creator extends RabbitConnectionFactoryCreator {
+			@Override
+			public CachingConnectionFactory rabbitConnectionFactory(RabbitProperties config,
+					ObjectProvider<ConnectionNameStrategy> connectionNameStrategy) throws Exception {
+				CachingConnectionFactory cf = super.rabbitConnectionFactory(config, connectionNameStrategy);
+				cf.setConnectionNameStrategy(connectionFactory -> "rabbit.sink.own.connection");
+				cf.afterPropertiesSet();
+				return cf;
+			}
+
+		}
+
+	}
+
+	private static class PassThroughMessageConverter implements MessageConverter {
 
 		@Override
-		public CachingConnectionFactory rabbitConnectionFactory(RabbitProperties config,
-				ObjectProvider<ConnectionNameStrategy> connectionNameStrategy) throws Exception {
-			CachingConnectionFactory cf = super.rabbitConnectionFactory(config, connectionNameStrategy);
-			cf.setConnectionNameStrategy(new ConnectionNameStrategy() {
+		public Message toMessage(Object body, MessageProperties messageProperties) throws MessageConversionException {
+			Assert.isInstanceOf(byte[].class, body, "The 'PassThroughMessageConverter' supports only byte[] objects.");
+			return new Message((byte[]) body, messageProperties);
+		}
 
-				@Override
-				public String obtainNewConnectionName(ConnectionFactory connectionFactory) {
-					return "rabbit.sink.own.connection";
-				}
-
-			});
-			cf.afterPropertiesSet();
-			return cf;
+		@Override
+		public Object fromMessage(Message message) throws MessageConversionException {
+			throw new UnsupportedOperationException();
 		}
 
 	}

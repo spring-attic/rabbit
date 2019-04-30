@@ -66,12 +66,6 @@ public class RabbitSinkProperties {
 	private String[] mappedRequestHeaders = { "*" };
 
 	/**
-	 * The bean name for a custom message converter; if omitted, a SimpleMessageConverter is used.
-	 * If 'jsonConverter', a Jackson2JsonMessageConverter bean will be created for you.
-	 */
-	private String converterBeanName;
-
-	/**
 	 * When true, use a separate connection based on the boot properties.
 	 */
 	private boolean ownConnection;
@@ -122,14 +116,6 @@ public class RabbitSinkProperties {
 
 	public void setMappedRequestHeaders(String[] mappedRequestHeaders) {
 		this.mappedRequestHeaders = mappedRequestHeaders;
-	}
-
-	public String getConverterBeanName() {
-		return this.converterBeanName;
-	}
-
-	public void setConverterBeanName(String converterBeanName) {
-		this.converterBeanName = converterBeanName;
 	}
 
 	@AssertTrue(message = "routingKey or routingKeyExpression is required")

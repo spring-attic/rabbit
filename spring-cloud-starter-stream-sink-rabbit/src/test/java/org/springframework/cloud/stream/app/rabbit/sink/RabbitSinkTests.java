@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 the original author or authors.
+ * Copyright 2016-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.junit.rabbit.RabbitTestSupport;
 import org.springframework.cloud.stream.messaging.Sink;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.MediaType;
 import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.MessageHeaders;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -55,6 +58,7 @@ import static org.junit.Assert.assertThat;
  * Tests for RabbitSink.
  *
  * @author Gary Russell
+ * @author Artem Bilan
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @DirtiesContext
@@ -87,8 +91,8 @@ public abstract class RabbitSinkTests {
 	public static class SimpleRoutingKeyAndCustomHeaderTests extends RabbitSinkTests {
 
 		@Test
-		public void test() throws Exception {
-			this.channels.input().send(MessageBuilder.withPayload("foo")
+		public void test() {
+			this.channels.input().send(MessageBuilder.withPayload("foo".getBytes())
 										.setHeader("bar", "baz")
 										.setHeader("qux", "fiz")
 										.build());
@@ -98,64 +102,21 @@ public abstract class RabbitSinkTests {
 			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
 			assertNull(received.getMessageProperties().getHeaders().get("qux"));
 			assertEquals(MessageDeliveryMode.PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
-			assertThat(this.rabbitTemplate.getMessageConverter(), instanceOf(SimpleMessageConverter.class));
 		}
 
 	}
 
-	@SpringBootTest({ "rabbit.exchange=scsapp-testex",
-		"rabbit.routingKey=scsapp-testrk",
-		"rabbit.converterBeanName=myConverter",
-		"rabbit.mappedRequestHeaders=STANDARD_REQUEST_HEADERS,bar" })
-	public static class ExchangeRoutingKeyAndCustomHeaderTests extends RabbitSinkTests {
-
-		@Test
-		public void test() throws Exception {
-			this.channels.input().send(MessageBuilder.withPayload("foo")
-										.setHeader("bar", "baz")
-										.setHeader(AmqpHeaders.DELIVERY_MODE, MessageDeliveryMode.PERSISTENT)
-										.build());
-			this.rabbitTemplate.setReceiveTimeout(10000);
-			Message received = this.rabbitTemplate.receive("scsapp-testq");
-			assertEquals("\"foo\"", new String(received.getBody()));
-			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
-			assertEquals(MessageDeliveryMode.PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
-			assertSame(this.myConverter, this.rabbitTemplate.getMessageConverter());
-		}
-
-	}
-
-	@SpringBootTest({ "rabbit.exchangeExpression='scsapp-testex'",
-		"rabbit.routingKeyExpression='scsapp-testrk'",
-		"rabbit.converterBeanName=jsonConverter" })
-	public static class ExchangeRoutingKeyExpressionsAndCustomHeaderTests extends RabbitSinkTests {
-
-		@Test
-		public void test() throws Exception {
-			this.channels.input().send(MessageBuilder.withPayload("foo")
-										.setHeader("bar", "baz")
-										.setHeader("qux", "fiz")
-										.build());
-			this.rabbitTemplate.setReceiveTimeout(10000);
-			Message received = this.rabbitTemplate.receive("scsapp-testq");
-			assertEquals("\"foo\"", new String(received.getBody()));
-			assertEquals("baz", received.getMessageProperties().getHeaders().get("bar"));
-			assertEquals("fiz", received.getMessageProperties().getHeaders().get("qux"));
-			assertEquals(MessageDeliveryMode.NON_PERSISTENT, received.getMessageProperties().getReceivedDeliveryMode());
-		}
-
-	}
 
 	@SpringBootTest({ "rabbit.routingKey=scsapp-testOwn",
 		"rabbit.own-connection=true" })
 	public static class OwnConnectionTest extends RabbitSinkTests {
 
 		@Test
-		public void test() throws Exception {
+		public void test() {
 			this.rabbitAdmin.declareQueue(
 					new Queue("scsapp-testOwn", false, false, true));
 			this.bootFactory.resetConnection();
-			this.channels.input().send(MessageBuilder.withPayload("foo")
+			this.channels.input().send(MessageBuilder.withPayload("foo".getBytes())
 										.build());
 			this.rabbitTemplate.setReceiveTimeout(10000);
 			Message received = this.rabbitTemplate.receive("scsapp-testOwn");
@@ -167,10 +128,6 @@ public abstract class RabbitSinkTests {
 
 	@SpringBootApplication
 	static class RabbitSinkApplication {
-
-		public static void main(String[] args) {
-			SpringApplication.run(RabbitSinkApplication.class, args);
-		}
 
 		@Bean
 		public Queue queue() {
@@ -185,11 +142,6 @@ public abstract class RabbitSinkTests {
 		@Bean
 		public Binding binding() {
 			return BindingBuilder.bind(queue()).to(exchange()).with("scsapp-testrk");
-		}
-
-		@Bean
-		public Jackson2JsonMessageConverter myConverter() {
-			return new Jackson2JsonMessageConverter();
 		}
 
 	}
