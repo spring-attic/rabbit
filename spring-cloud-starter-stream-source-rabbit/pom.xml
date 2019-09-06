@@ -50,12 +50,32 @@
 					</generatedApps>
 					<additionalGlobalDependencies>
 						<dependency>
+							<groupId>org.springframework.cloud.stream.app</groupId>
+							<artifactId>app-starters-security-common</artifactId>
+						</dependency>
+						<dependency>
 							<groupId>org.springframework.cloud</groupId>
 							<artifactId>spring-cloud-starter-config</artifactId>
 						</dependency>
 						<dependency>
 							<groupId>org.springframework.cloud.stream.app</groupId>
 							<artifactId>app-starters-micrometer-common</artifactId>
+						</dependency>
+						<dependency>
+							<groupId>io.micrometer</groupId>
+							<artifactId>micrometer-registry-influx</artifactId>
+						</dependency>
+						<dependency>
+							<groupId>io.micrometer</groupId>
+							<artifactId>micrometer-registry-prometheus</artifactId>
+						</dependency>
+						<dependency>
+							<groupId>io.micrometer</groupId>
+							<artifactId>micrometer-registry-datadog</artifactId>
+						</dependency>
+						<dependency>
+							<groupId>io.micrometer.prometheus</groupId>
+							<artifactId>prometheus-rsocket-spring</artifactId>
 						</dependency>
 					</additionalGlobalDependencies>
 				</configuration>
