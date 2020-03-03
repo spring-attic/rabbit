@@ -78,6 +78,7 @@
 							<artifactId>prometheus-rsocket-spring</artifactId>
 						</dependency>
 					</additionalGlobalDependencies>
+					<enableContainerImageMetadata>true</enableContainerImageMetadata>
 				</configuration>
 			</plugin>
 		</plugins>
